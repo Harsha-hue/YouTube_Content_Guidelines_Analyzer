@@ -58,7 +58,7 @@
 
 ### **Step 1: Clone the Repository**  
 ```bash
-git clone https://github.com/yourusername/youtube-guidelines-analyzer.git
+git clone https://github.com/Harsha-hue/YouTube_Content_Guidelines_Analyzer.git
 cd youtube-guidelines-analyzer
 ```
 
