@@ -37,7 +37,7 @@ class YouTubeGuidelinesAnalyzer:
         # Load databases
         self.violation_categories = self.load_violation_categories()
         self.demonetization_triggers = self.load_demonetization_triggers()
-        self.examples_db = self.load_examples_db()
+        self.examples_db = self.load_examples()
         
         # Initialize YouTube API
         self.youtube_api = build('youtube', 'v3', developerKey=self.get_api_key())
@@ -116,34 +116,110 @@ class YouTubeGuidelinesAnalyzer:
         except:
             return ["demonetized", "not monetized", "adpocalypse", "limited ads"]
     
-    def load_examples_db(self):
-        """Load examples of compliant and non-compliant content"""
-        return {
+    def load_examples(self, category):
+        """Return compliant and non-compliant examples with detailed explanations"""
+        examples_db = {
             "Hate Speech": {
-                "compliant": "How to combat hate speech in online communities",
-                "non_compliant": "Why hate speech should be protected as free speech"
+                "compliant": {
+                    "text": "How to combat hate speech in online communities",
+                    "explanation": "Focuses on opposing hate speech rather than promoting it, educational tone"
+                },
+                "non_compliant": {
+                    "text": "Why hate speech should be protected as free speech",
+                    "explanation": "Appears to justify hate speech, could be flagged for promoting discrimination"
+                },
+                "borderline": {
+                    "text": "Debate about free speech limits on controversial topics",
+                    "explanation": "While discussing sensitive topics, needs clear context and moderation to avoid violations"
+                }
             },
             "Violence": {
-                "compliant": "Documentary about gang violence prevention",
-                "non_compliant": "How to make a bomb at home"
+                "compliant": {
+                    "text": "Documentary about gang violence prevention programs",
+                    "explanation": "Educational context about preventing violence"
+                },
+                "non_compliant": {
+                    "text": "How to make a bomb at home - detailed tutorial",
+                    "explanation": "Direct instructions for violence, violates YouTube's dangerous content policies"
+                },
+                "borderline": {
+                    "text": "Movie review of violent action film",
+                    "explanation": "May require age restriction depending on graphic descriptions"
+                }
             },
             "Harassment": {
-                "compliant": "How to deal with online harassment",
-                "non_compliant": "Where to find someone's private information"
+                "compliant": {
+                    "text": "How to deal with online harassment as a creator",
+                    "explanation": "Helpful advice without targeting individuals"
+                },
+                "non_compliant": {
+                    "text": "Here's why [person's name] deserves to be doxxed",
+                    "explanation": "Encourages harassment and privacy violations"
+                },
+                "borderline": {
+                    "text": "Calling out problematic behavior in the community",
+                    "explanation": "Needs to focus on behavior rather than individuals to avoid harassment claims"
+                }
             },
             "Sexual Content": {
-                "compliant": "Sex education for teenagers",
-                "non_compliant": "Explicit adult content tutorial"
+                "compliant": {
+                    "text": "Sex education for teenagers - responsible guide",
+                    "explanation": "Educational content with appropriate context"
+                },
+                "non_compliant": {
+                    "text": "Explicit adult content tutorial with nudity",
+                    "explanation": "Violates YouTube's sexual content policies"
+                },
+                "borderline": {
+                    "text": "Discussion about adult film industry working conditions",
+                    "explanation": "May require careful framing to avoid policy violations"
+                }
             },
             "Misinformation": {
-                "compliant": "Debunking common conspiracy theories",
-                "non_compliant": "The truth about vaccines causing autism"
+                "compliant": {
+                    "text": "Debunking common vaccine conspiracy theories",
+                    "explanation": "Fact-based approach to counter misinformation"
+                },
+                "non_compliant": {
+                    "text": "The truth about vaccines causing autism (fake claims)",
+                    "explanation": "Spreads dangerous medical misinformation"
+                },
+                "borderline": {
+                    "text": "Alternative health remedies discussion",
+                    "explanation": "Needs clear disclaimers about evidence and professional medical advice"
+                }
             },
             "Copyright Issues": {
-                "compliant": "How copyright law protects creators",
-                "non_compliant": "Download latest movies for free"
+                "compliant": {
+                    "text": "How copyright law protects creators - explained",
+                    "explanation": "Educational content about legal principles"
+                },
+                "non_compliant": {
+                    "text": "Download latest movies for free - piracy site links",
+                    "explanation": "Direct promotion of copyright infringement"
+                },
+                "borderline": {
+                    "text": "Review of newly released movie with long clips",
+                    "explanation": "May need to shorten clips and add commentary to qualify as fair use"
+                }
+            },
+            "Demonetization Risk": {
+                "compliant": {
+                    "text": "Family-friendly product review (sponsored)",
+                    "explanation": "Likely to maintain full monetization"
+                },
+                "non_compliant": {
+                    "text": "Graphic crime scene analysis with disturbing images",
+                    "explanation": "High risk for limited ads or demonetization"
+                },
+                "borderline": {
+                    "text": "Discussion of controversial news topics",
+                    "explanation": "May be monetized but could face limitations depending on treatment"
+                }
             }
         }
+        
+        return examples_db.get(category, {})
     
     def load_history(self):
         """Load historical analysis data from file"""
@@ -523,7 +599,16 @@ class YouTubeGuidelinesAnalyzer:
             # Add examples if available
             examples = self.get_examples(category)
             if examples:
-                report.append(f"Examples:\n- Compliant: {examples['compliant']}\n- Non-compliant: {examples['non_compliant']}")
+                    report.append("\nExamples:")
+                    report.append(f"- ✅ Compliant: {examples['compliant']['text']}")
+                    report.append(f"  Explanation: {examples['compliant']['explanation']}")
+                    
+                    report.append(f"- ❌ Non-compliant: {examples['non_compliant']['text']}")
+                    report.append(f"  Explanation: {examples['non_compliant']['explanation']}")
+                    
+                    if 'borderline' in examples:
+                        report.append(f"- ⚠️ Borderline: {examples['borderline']['text']}")
+                        report.append(f"  Explanation: {examples['borderline']['explanation']}")
         
         # Calculate overall risk score (0-100)
         risk_score = min(100, total_severity * 5 + ml_risk_score / 2)
